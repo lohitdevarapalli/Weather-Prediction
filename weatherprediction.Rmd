@@ -1,0 +1,95 @@
+---
+title: "Weather Prediction"
+output:
+  pdf_document: default
+  html_document: default
+date: "`r Sys.Date()`"
+---
+
+```{r}
+#Read the data 
+library(dplyr)
+library(plyr)
+data<-read.csv("weather.csv")
+head(data)
+```
+```{r}
+summary(data)
+```
+
+Changing boolean values
+```{r}
+#data$RainToday <- revalue(data$RainToday, c("Yes"=1))
+#data$RainTomorrow <- revalue(data$RainTomorrow, c("Yes"=1))
+#data$RainToday <- revalue(data$RainToday, c("No"=0))
+#data$RainTomorrow <- revalue(data$RainTomorrow, c("No"=0))
+data$RainToday=as.factor(data$RainToday)
+data$RainTomorrow=as.factor(data$RainTomorrow)
+head(data)
+```
+
+
+Check for any missing values and remove them
+```{r}
+sum(is.na(data))
+```
+
+```{r}
+data=na.omit(data)
+head(data)
+
+```
+As the wind pressure increases the humidity also shows a rise 
+```{r}
+library(ggplot2)
+
+ggplot(data) +
+  aes(x = data$Pressure9am,y=data$Humidity9am) +
+  geom_point(colour = "blue") +
+  theme_minimal()
+```
+The increase in humidity percentage affects the sunshine amount positively.
+```{r}
+ggplot(data) +
+  aes(x = data$Humidity9am,y=data$Sunshine) +
+  geom_point(colour = "red") +
+  theme_minimal()
+```
+```{r}
+ggplot(data) +
+  aes(x = data$Humidity9am,y=data$Rainfall) +
+  geom_point(colour = "green") +
+  theme_minimal()
+```
+
+SPLITTING THE DATA INTO TRAIN AND TEST SETS
+```{r}
+library(caret)
+index <- sample(c(TRUE, FALSE), nrow(data), replace=TRUE, prob=c(0.80,0.20))
+trainData<-data[index,]
+testData<-data[!index,]
+dim(trainData)
+dim(testData)
+```
+BUILDING THE DECISION TREE MODEL
+```{r}
+library(rpart)
+library(rpart.plot)
+```
+
+```{r}
+model=rpart(RainTomorrow~.,trainData)
+rpart.plot(model)
+```
+```{r}
+
+Prediction <- predict(model, testData, type= "class")
+confusionMatrix(Prediction, testData$RainTomorrow, positive= "Yes")
+
+```
+The Accuracy of the model is 86.57%
+
+
+```{r}
+summary(model)
+```
